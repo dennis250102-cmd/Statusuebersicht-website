@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projektdreieck Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161d;
+    --bg3: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7080;
+    --accent: #4f8ef7;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 28px;
+  }
+
+  /* ── CONFIG PANEL ── */
+  #config-panel {
+    max-width: 560px;
+    margin: 60px auto;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 40px;
+  }
+  #config-panel h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  #config-panel p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); }
+  .field select option { background: var(--bg3); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 8px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .hint {
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: rgba(79,142,247,0.07);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: #8ab4fa;
+    line-height: 1.7;
+  }
+  .hint code {
+    background: rgba(79,142,247,0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: var(--mono);
+  }
+
+  /* ── DASHBOARD ── */
+  #dashboard { display: none; }
+
+  .dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .dash-title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+  .dash-meta {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .btn-sm {
+    padding: 7px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-sm:hover { color: var(--text); border-color: var(--border2); }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .project-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .project-card:hover { border-color: var(--border2); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+    max-width: 180px;
+  }
+  .status-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  .status-good { background: rgba(52,211,153,0.12); color: var(--green); }
+  .status-warn { background: rgba(251,191,36,0.12); color: var(--amber); }
+  .status-bad  { background: rgba(248,113,113,0.12); color: var(--red); }
+
+  .triangle-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .metrics-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .metric-item {
+    text-align: center;
+    padding: 8px 6px;
+    background: var(--bg3);
+    border-radius: 8px;
+  }
+  .metric-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .metric-value {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--mono);
+  }
+  .metric-plan {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 1px;
+  }
+
+  /* ── ERROR / LOADING ── */
+  .loader {
+    text-align: center;
+    padding: 60px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .loader .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    padding: 20px;
+    background: rgba(248,113,113,0.06);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: #fca5a5;
+    line-height: 1.6;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 28px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- CONFIG PANEL -->
+<div id="config-panel">
+  <h1>⬡ Projektdreieck</h1>
+  <p>Verbinde dein monday.com Board, um die Projektdreiecke automatisch zu laden.</p>
+
+  <div class="field">
+    <label>API Token</label>
+    <input type="password" id="inp-token" placeholder="eyJhbGci..." autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Board ID</label>
+    <input type="text" id="inp-board" placeholder="1234567890">
+  </div>
+
+  <div class="hint">
+    <strong>Spaltenbezeichnungen erwartet (Zahlen-Spalten):</strong><br>
+    <code>Ziele_Ist</code> &nbsp;<code>Ziele_Plan</code><br>
+    <code>Zeit_Ist</code> &nbsp;&nbsp;<code>Zeit_Plan</code><br>
+    <code>Budget_Ist</code> <code>Budget_Plan</code><br><br>
+    Alle Werte als <strong>Prozent (0–100)</strong>. Jede Zeile im Board = ein Projekt.
+  </div>
+
+  <button class="btn-primary" id="btn-connect" onclick="connect()">Verbinden &amp; laden</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Projektdreieck Dashboard</div>
+      <div class="dash-meta" id="dash-meta"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sm" onclick="refresh()">↻ Aktualisieren</button>
+      <button class="btn-sm" onclick="showConfig()">⚙ Einstellungen</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#4f8ef7"></div>
+      <span>Ist-Werte</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:rgba(255,255,255,0.2);border:1px dashed rgba(255,255,255,0.35)"></div>
+      <span>Plan-Werte</span>
+    </div>
+  </div>
+
+  <div id="projects-container"></div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+let API_TOKEN = '';
+let BOARD_ID  = '';
+
+// Spalten-Mapping: Key = interner Name, Value = monday Spalten-Titel (case-insensitive)
+const COL_MAP = {
+  ziele_ist:   'ziele_ist',
+  ziele_plan:  'ziele_plan',
+  zeit_ist:    'zeit_ist',
+  zeit_plan:   'zeit_plan',
+  budget_ist:  'budget_ist',
+  budget_plan: 'budget_plan',
+};
+
+// ── MONDAY API ───────────────────────────────────────────────────────────────
+async function fetchBoard() {
+  const query = `
+    query {
+      boards(ids: [${BOARD_ID}]) {
+        name
+        items_page(limit: 50) {
+          items {
+            id
+            name
+            column_values {
+              id
+              title
+              value
+              text
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const res = await fetch('https://api.monday.com/v2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': API_TOKEN,
+      'API-Version': '2024-01'
+    },
+    body: JSON.stringify({ query })
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  return json.data.boards[0];
+}
+
+function parseItems(board) {
+  const items = board.items_page.items;
+  return items.map(item => {
+    const vals = {};
+    item.column_values.forEach(cv => {
+      const key = cv.title.toLowerCase().replace(/\s+/g, '_');
+      const num = parseFloat(cv.text);
+      vals[key] = isNaN(num) ? null : num;
+    });
+
+    return {
+      id: item.id,
+      name: item.name,
+      ziele_ist:   vals[COL_MAP.ziele_ist]   ?? null,
+      ziele_plan:  vals[COL_MAP.ziele_plan]  ?? 100,
+      zeit_ist:    vals[COL_MAP.zeit_ist]    ?? null,
+      zeit_plan:   vals[COL_MAP.zeit_plan]   ?? 100,
+      budget_ist:  vals[COL_MAP.budget_ist]  ?? null,
+      budget_plan: vals[COL_MAP.budget_plan] ?? 100,
+    };
+  }).filter(p =>
+    p.ziele_ist !== null || p.zeit_ist !== null || p.budget_ist !== null
+  );
+}
+
+// ── TRIANGLE SVG ─────────────────────────────────────────────────────────────
+function drawTriangle(p) {
+  const SIZE = 200;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R  = 78;  // radius for 100%
+  const pad = 26; // label padding
+
+  // Three axis directions (top, bottom-left, bottom-right)
+  // top = Ziele, bottom-left = Budget, bottom-right = Zeit
+  const axes = [
+    { angle: -90,  label: 'Ziele',  ist: p.ziele_ist,  plan: p.ziele_plan  },
+    { angle: 150,  label: 'Budget', ist: p.budget_ist, plan: p.budget_plan },
+    { angle:  30,  label: 'Zeit',   ist: p.zeit_ist,   plan: p.zeit_plan   },
+  ];
+
+  function point(pct, angleDeg) {
+    const a = angleDeg * Math.PI / 180;
+    const r = (pct / 100) * R;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+
+  function labelPos(angleDeg) {
+    const a = angleDeg * Math.PI / 180;
+    const r = R + pad;
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  }
+
+  // Grid lines at 25/50/75/100%
+  let gridSvg = '';
+  [25, 50, 75, 100].forEach(pct => {
+    const pts = axes.map(ax => point(pct, ax.angle));
+    const d = pts.map((pt, i) => `${i===0?'M':'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ') + 'Z';
+    const opacity = pct === 100 ? 0.25 : 0.1;
+    gridSvg += `<path d="${d}" fill="none" stroke="rgba(255,255,255,${opacity})" stroke-width="${pct===100?1:0.5}"/>`;
+  });
+
+  // Axis lines
+  let axesSvg = '';
+  axes.forEach(ax => {
+    const end = point(100, ax.angle);
+    axesSvg += `<line x1="${cx}" y1="${cy}" x2="${end.x.toFixed(1)}" y2="${end.y.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>`;
+  });
+
+  // Plan polygon
+  const planPts = axes.map(ax => point(ax.plan, ax.angle));
+  const planD = planPts.map((pt, i) => `${i===0?'M':'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ') + 'Z';
+
+  // Ist polygon
+  const istPts = axes.map(ax => {
+    const val = ax.ist !== null ? ax.ist : 0;
+    return point(val, ax.angle);
+  });
+  const istD = istPts.map((pt, i) => `${i===0?'M':'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ') + 'Z';
+
+  // Status color for Ist
+  const deviation = axes.reduce((sum, ax) => {
+    if (ax.ist === null) return sum;
+    return sum + Math.abs(ax.ist - ax.plan);
+  }, 0) / 3;
+
+  const istColor = deviation < 10 ? '#34d399' : deviation < 25 ? '#fbbf24' : '#f87171';
+
+  // Labels
+  let labelsSvg = '';
+  axes.forEach(ax => {
+    const lp = labelPos(ax.angle);
+    const anchor = ax.angle === -90 ? 'middle' :
+                   ax.angle === 150 ? 'end' : 'start';
+    const dy = ax.angle === -90 ? -4 : 4;
+
+    const istVal = ax.ist !== null ? Math.round(ax.ist) + '%' : '–';
+    const planVal = Math.round(ax.plan) + '%';
+
+    labelsSvg += `
+      <text x="${lp.x.toFixed(1)}" y="${(lp.y + dy - 6).toFixed(1)}"
+        text-anchor="${anchor}"
+        font-family="DM Sans, sans-serif"
+        font-size="9"
+        font-weight="500"
+        fill="rgba(255,255,255,0.55)"
+        letter-spacing="0.04em">${ax.label.toUpperCase()}</text>
+      <text x="${lp.x.toFixed(1)}" y="${(lp.y + dy + 6).toFixed(1)}"
+        text-anchor="${anchor}"
+        font-family="DM Mono, monospace"
+        font-size="10"
+        font-weight="500"
+        fill="${istColor}">${istVal}</text>
+    `;
+  });
+
+  // Dot markers on Ist polygon
+  let dotsSvg = '';
+  istPts.forEach(pt => {
+    dotsSvg += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3" fill="${istColor}" stroke="rgba(13,15,20,0.8)" stroke-width="1.5"/>`;
+  });
+
+  return `
+    <svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg">
+      ${gridSvg}
+      ${axesSvg}
+      <!-- Plan -->
+      <path d="${planD}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.28)" stroke-width="1" stroke-dasharray="4 3"/>
+      <!-- Ist -->
+      <path d="${istD}" fill="${istColor}22" stroke="${istColor}" stroke-width="1.5"/>
+      ${dotsSvg}
+      ${labelsSvg}
+    </svg>
+  `;
+}
+
+// ── STATUS ──────────────────────────────────────────────────────────────────
+function getStatus(p) {
+  const axes = [
+    { ist: p.ziele_ist,  plan: p.ziele_plan  },
+    { ist: p.zeit_ist,   plan: p.zeit_plan   },
+    { ist: p.budget_ist, plan: p.budget_plan },
+  ];
+  const avg = axes.reduce((s, ax) => s + Math.abs((ax.ist ?? ax.plan) - ax.plan), 0) / 3;
+  if (avg < 10) return { label: 'Im Plan', cls: 'status-good' };
+  if (avg < 25) return { label: 'Abweichung', cls: 'status-warn' };
+  return { label: 'Kritisch', cls: 'status-bad' };
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function renderProjects(projects, boardName) {
+  const dash = document.getElementById('dashboard');
+  const config = document.getElementById('config-panel');
+  config.style.display = 'none';
+  dash.style.display = 'block';
+
+  document.getElementById('dash-meta').textContent =
+    `${boardName} · ${projects.length} Projekte`;
+
+  const container = document.getElementById('projects-container');
+
+  if (projects.length === 0) {
+    container.innerHTML = `<div class="error-box">Keine Projekte mit Kennzahlen gefunden. Bitte prüfe die Spaltenbezeichnungen.</div>`;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'projects-grid';
+
+  projects.forEach(p => {
+    const status = getStatus(p);
+    const card = document.createElement('div');
+    card.className = 'project-card';
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-title">${p.name}</div>
+        <div class="status-badge ${status.cls}">${status.label}</div>
+      </div>
+      <div class="triangle-wrap">${drawTriangle(p)}</div>
+      <div class="metrics-row">
+        <div class="metric-item">
+          <div class="metric-label">Ziele</div>
+          <div class="metric-value">${p.ziele_ist !== null ? Math.round(p.ziele_ist) + '%' : '–'}</div>
+          <div class="metric-plan">Plan: ${Math.round(p.ziele_plan)}%</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Zeit</div>
+          <div class="metric-value">${p.zeit_ist !== null ? Math.round(p.zeit_ist) + '%' : '–'}</div>
+          <div class="metric-plan">Plan: ${Math.round(p.zeit_plan)}%</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">Budget</div>
+          <div class="metric-value">${p.budget_ist !== null ? Math.round(p.budget_ist) + '%' : '–'}</div>
+          <div class="metric-plan">Plan: ${Math.round(p.budget_plan)}%</div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  container.innerHTML = '';
+  container.appendChild(grid);
+}
+
+// ── ACTIONS ──────────────────────────────────────────────────────────────────
+async function connect() {
+  API_TOKEN = document.getElementById('inp-token').value.trim();
+  BOARD_ID  = document.getElementById('inp-board').value.trim();
+
+  if (!API_TOKEN || !BOARD_ID) {
+    alert('Bitte API Token und Board ID eingeben.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-connect');
+  btn.disabled = true;
+  btn.textContent = 'Verbinde…';
+
+  try {
+    const board = await fetchBoard();
+    const projects = parseItems(board);
+    renderProjects(projects, board.name);
+    // persist (session only)
+    sessionStorage.setItem('mdt_token', API_TOKEN);
+    sessionStorage.setItem('mdt_board', BOARD_ID);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Verbinden & laden';
+    document.getElementById('config-panel').querySelector('.hint').insertAdjacentHTML('afterend',
+      `<div class="error-box" style="margin-top:16px">Fehler: ${e.message}</div>`
+    );
+  }
+}
+
+async function refresh() {
+  const container = document.getElementById('projects-container');
+  container.innerHTML = '<div class="loader"><div class="spinner"></div>Lade Daten…</div>';
+  try {
+    const board = await fetchBoard();
+    const projects = parseItems(board);
+    renderProjects(projects, board.name);
+  } catch (e) {
+    container.innerHTML = `<div class="error-box">Fehler beim Laden: ${e.message}</div>`;
+  }
+}
+
+function showConfig() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('config-panel').style.display = 'block';
+  document.getElementById('btn-connect').disabled = false;
+  document.getElementById('btn-connect').textContent = 'Verbinden & laden';
+}
+
+// ── AUTO-RESTORE ──────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const t = sessionStorage.getItem('mdt_token');
+  const b = sessionStorage.getItem('mdt_board');
+  if (t && b) {
+    document.getElementById('inp-token').value = t;
+    document.getElementById('inp-board').value = b;
+  }
+});
+</script>
+</body>
+</html>
